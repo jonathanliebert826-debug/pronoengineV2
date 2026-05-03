@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PronoEngine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080808;
+  --surface: #0f0f0f;
+  --surface2: #161616;
+  --border: #1f1f1f;
+  --accent: #c8f135;
+  --accent2: #ff4d4d;
+  --accent3: #4daaff;
+  --text: #e8e8e8;
+  --muted: #555;
+  --muted2: #333;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* GRAIN OVERLAY */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.4;
+}
+
+/* HEADER */
+.header {
+  padding: 20px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  animation: fadeDown 0.6s ease both;
+}
+
+.logo-wrap { display: flex; flex-direction: column; gap: 2px; }
+
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  letter-spacing: 4px;
+  line-height: 1;
+  color: #fff;
+}
+
+.logo span { color: var(--accent); }
+
+.logo-sub {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 2px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.pulse {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+/* STATS BAR */
+.stats-bar {
+  display: flex;
+  gap: 1px;
+  margin: 20px 20px 0;
+  animation: fadeDown 0.6s 0.1s ease both;
+}
+
+.stat {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 10px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: var(--muted2);
+}
+
+.stat.highlight::before { background: var(--accent); }
+
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: #fff;
+  line-height: 1;
+}
+
+.stat-val.green { color: var(--accent); }
+.stat-val.red { color: var(--accent2); }
+.stat-val.blue { color: var(--accent3); }
+
+.stat-lbl {
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-top: 3px;
+}
+
+/* NAV */
+.nav {
+  display: flex;
+  gap: 1px;
+  margin: 20px 20px 0;
+  animation: fadeDown 0.6s 0.15s ease both;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 12px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.nav-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 700;
+}
+
+/* SECTIONS */
+.section { display: none; padding: 20px 20px 100px; animation: fadeUp 0.4s ease both; }
+.section.active { display: block; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 20px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-label {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* MODE TOGGLE */
+.mode-toggle {
+  display: flex;
+  gap: 1px;
+  margin-bottom: 20px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.mode-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(200,241,53,0.05);
+}
+
+/* INPUTS */
+input, select, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 14px 16px;
+  font-size: 13px;
+  border-radius: 2px;
+  margin-bottom: 10px;
+  font-family: 'DM Mono', monospace;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+input::placeholder, textarea::placeholder { color: var(--muted); }
+select option { background: #111; }
+
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+
+textarea { resize: none; font-size: 12px; line-height: 1.6; }
+
+/* BUTTONS */
+.btn-main {
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-main::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.btn-main:active::after { opacity: 0.1; }
+.btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 14px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+/* LOADING */
+.loading { display: none; text-align: center; padding: 50px 0; }
+.loading.show { display: block; }
+
+.loader-ring {
+  width: 48px; height: 48px;
+  border: 1px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.loading-step {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  opacity: 0;
+  animation: stepReveal 0.5s ease forwards;
+}
+
+.loading-step.s1 { animation-delay: 0.5s; }
+.loading-step.s2 { animation-delay: 2s; }
+.loading-step.s3 { animation-delay: 4s; }
+.loading-step.s4 { animation-delay: 6s; }
+
+@keyframes stepReveal {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.loading-step.active { color: var(--accent); }
+
+/* RESULT */
+.result { display: none; }
+.result.show { display: block; animation: fadeUp 0.4s ease both; }
+
+/* DATA QUALITY BADGE */
+.dq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+
+.dq-complete { background: rgba(200,241,53,0.1); border: 1px solid var(--accent); color: var(--accent); }
+.dq-partial { background: rgba(77,170,255,0.1); border: 1px solid var(--accent3); color: var(--accent3); }
+.dq-intuition { background: rgba(255,77,77,0.1); border: 1px solid var(--accent2); color: var(--accent2); }
+
+/* MAIN PREDICTION BOX */
+.pred-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 20px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.pred-match {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.pred-type {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+}
+
+.pred-main {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.pred-odds {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.pred-odds span { color: #fff; font-weight: 500; }
+
+/* CONFIDENCE BAR */
+.conf-wrap { margin-bottom: 16px; }
+.conf-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.conf-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; }
+.conf-val { font-size: 9px; color: var(--accent); letter-spacing: 1px; font-weight: 700; }
+
+.conf-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.conf-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+
+.conf-fill.medium { background: var(--accent3); }
+.conf-fill.low { background: var(--accent2); }
+
+/* METRICS GRID */
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.metric-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
+.metric-lbl {
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* FORM DISPLAY */
+.form-display { display: flex; gap: 4px; margin-bottom: 4px; }
+.form-dot {
+  width: 22px; height: 22px;
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.form-dot.V { background: rgba(200,241,53,0.15); color: var(--accent); border: 1px solid rgba(200,241,53,0.3); }
+.form-dot.D { background: rgba(255,77,77,0.1); color: var(--accent2); border: 1px solid rgba(255,77,77,0.25); }
+.form-dot.N { background: rgba(85,85,85,0.2); color: var(--muted); border: 1px solid var(--border); }
+
+/* TEAMS COMPARISON */
+.teams-compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.team-block { background: var(--surface2); border: 1px solid var(--border); padding: 14px 12px; }
+.team-name { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.team-absences { font-size: 10px; color: var(--accent2); margin-top: 6px; line-height: 1.5; }
+.team-info { font-size: 10px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+
+.vs-block { text-align: center; }
+.vs-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--muted2);
+  letter-spacing: 2px;
+}
+
+/* KEY FACTORS */
+.factors { display: flex; flex-direction: column; gap: 6px; }
+.factor {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #aaa;
+}
+
+.factor-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* WARNING */
+.warning-box {
+  background: rgba(255,77,77,0.05);
+  border: 1px solid rgba(255,77,77,0.2);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--accent2);
+  line-height: 1.6;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.reasoning-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--muted2);
+  padding: 14px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.8;
+}
+
+/* ALT BET */
+.alt-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent3);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alt-label { font-size: 8px; color: var(--muted); letter-spacing: 2px; margin-bottom: 4px; }
+.alt-pick { font-size: 14px; font-weight: 700; color: var(--accent3); }
+.alt-prob { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent3); }
+
+/* FEEDBACK */
+.feedback { display: flex; gap: 8px; margin-bottom: 12px; }
+.fb-btn {
+  flex: 1;
+  padding: 13px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fb-btn:hover.won { border-color: var(--accent); color: var(--accent); background: rgba(200,241,53,0.05); }
+.fb-btn:hover.lost { border-color: var(--accent2); color: var(--accent2); background: rgba(255,77,77,0.05); }
+.fb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.fb-btn.selected-won { border-color: var(--accent); color: var(--accent); background: rgba(200,241,53,0.08); }
+.fb-btn.selected-lost { border-color: var(--accent2); color: var(--accent2); background: rgba(255,77,77,0.08); }
+
+/* COMBO LEGS */
+.leg {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.leg.partial { border-left-color: var(--accent3); }
+.leg.intuition { border-left-color: var(--accent2); }
+
+.leg-num { font-size: 8px; color: var(--muted); letter-spacing: 2px; margin-bottom: 4px; }
+.leg-match { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.leg-bet { font-size: 11px; color: var(--accent3); }
+.leg-right { text-align: right; flex-shrink: 0; }
+.leg-odds { font-family: 'Bebas Neue', sans-serif; font-size: 26px; }
+.leg-prob { font-size: 9px; color: var(--muted); margin-top: 2px; }
+.leg-dq { font-size: 8px; color: var(--muted); letter-spacing: 1px; }
+
+/* HISTORY */
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.h-match { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.h-bet { font-size: 10px; color: var(--muted); }
+.h-date { font-size: 9px; color: var(--muted2); margin-top: 3px; }
+.h-outcome { font-size: 11px; font-weight: 700; letter-spacing: 2px; }
+.h-won { color: var(--accent); }
+.h-lost { color: var(--accent2); }
+.h-pending { color: var(--muted); }
+
+.empty-state {
+  text-align: center;
+  padding: 50px 0;
+  font-size: 11px;
+  color: var(--muted2);
+  letter-spacing: 2px;
+}
+
+/* BOTTOM SAFE AREA */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(8,8,8,0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+
+.bnav-btn {
+  flex: 1;
+  padding: 14px 8px 18px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bnav-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.bnav-btn.active { color: var(--accent); }
+.bnav-btn.active svg { stroke: var(--accent); }
+
+.divider { height: 1px; background: var(--border); margin: 0 0 14px; }
+
+/* COMBO HEADER */
+.combo-summary {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.combo-title {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  margin-bottom: 14px;
+}
+
+.combo-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.combo-metric {
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 8px;
+}
+
+.combo-metric-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.combo-metric-lbl { font-size: 8px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+/* COMBO SIZE SELECTOR */
+.size-selector { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.size-btn {
+  padding: 8px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.size-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,241,53,0.05); }
+
+/* H2H BOX */
+.h2h-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.7;
+}
+
+.h2h-label { font-size: 8px; color: var(--muted); letter-spacing: 2px; margin-bottom: 6px; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-wrap">
+    <div class="logo">PRONO<span>ENGINE</span></div>
+    <div class="logo-sub">Système d'analyse sportive</div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-top:4px;">
+    <div class="status-pill">
+      <div class="pulse"></div>
+      WEB SEARCH ACTIF
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat highlight">
+    <div class="stat-val green" id="stat-total">0</div>
+    <div class="stat-lbl">ANALYSES</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val green" id="stat-won">0</div>
+    <div class="stat-lbl">GAGNÉS</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val red" id="stat-lost">0</div>
+    <div class="stat-lbl">PERDUS</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val blue" id="stat-rate">—</div>
+    <div class="stat-lbl">WIN RATE</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="bnav-btn active" onclick="switchSection('analyse')" id="bnav-analyse">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    ANALYSE
+  </button>
+  <button class="bnav-btn" onclick="switchSection('combo')" id="bnav-combo">
+    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    COMBINÉ
+  </button>
+  <button class="bnav-btn" onclick="switchSection('history')" id="bnav-history">
+    <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+    HISTORIQUE
+  </button>
+</div>
+
+<!-- SECTION: ANALYSE SIMPLE -->
+<div class="section active" id="section-analyse">
+
+  <!-- FORM -->
+  <div id="formSimple">
+    <div class="card" style="margin-top:20px;">
+      <div class="card-label">MATCH</div>
+      <input type="text" id="teamA" placeholder="Équipe domicile" autocomplete="off" />
+      <input type="text" id="teamB" placeholder="Équipe extérieur" autocomplete="off" />
+      <div class="row">
+        <input type="text" id="league" placeholder="Compétition" autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">TYPE DE PARI</div>
+      <select id="betType">
+        <option value="">Meilleur choix (recommandé)</option>
+        <option value="Victoire domicile (1)">Victoire domicile</option>
+        <option value="Match nul (X)">Match nul</option>
+        <option value="Victoire extérieur (2)">Victoire extérieur</option>
+        <option value="Double chance 1X">Double chance 1X</option>
+        <option value="Double chance X2">Double chance X2</option>
+        <option value="Double chance 12">Double chance 12</option>
+        <option value="Les deux équipes marquent (OUI)">BTTS — Oui</option>
+        <option value="Les deux équipes ne marquent pas (NON)">BTTS — Non</option>
+        <option value="Plus de 2.5 buts">Over 2.5</option>
+        <option value="Moins de 2.5 buts">Under 2.5</option>
+        <option value="Plus de 1.5 buts">Over 1.5</option>
+        <option value="Handicap asiatique">Handicap asiatique</option>
+        <option value="Score exact">Score exact ⚠️</option>
+      </select>
+      <textarea id="context" rows="2" placeholder="Infos supplémentaires (optionnel) — blessés connus, contexte..."></textarea>
+    </div>
+
+    <button class="btn-main" onclick="analyzeSimple()">ANALYSER LE MATCH</button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loadingSimple">
+    <div class="loader-ring"></div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:3px;">ANALYSE EN COURS</div>
+    <div class="loading-steps">
+      <div class="loading-step s1">▸ RECHERCHE WEB ACTIVÉE...</div>
+      <div class="loading-step s2">▸ COLLECTE DES DONNÉES RÉELLES...</div>
+      <div class="loading-step s3">▸ ANALYSE H2H ET FORME...</div>
+      <div class="loading-step s4">▸ CALCUL DU PRONOSTIC...</div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result" id="resultSimple">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;">
+      <div class="dq-badge dq-complete" id="r-dqBadge">● DONNÉES COMPLÈTES</div>
+    </div>
+
+    <!-- MAIN PREDICTION -->
+    <div class="pred-box">
+      <div class="pred-match" id="r-match">—</div>
+      <div class="pred-type" id="r-betType">—</div>
+      <div class="pred-main" id="r-pick">—</div>
+      <div class="pred-odds">COTE ESTIMÉE : <span id="r-odds">—</span></div>
+
+      <div class="conf-wrap">
+        <div class="conf-header">
+          <span class="conf-label">CONFIANCE</span>
+          <span class="conf-val" id="r-confLabel">—</span>
+        </div>
+        <div class="conf-bar">
+          <div class="conf-fill" id="r-confBar"></div>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-val" id="r-conf">—</div>
+          <div class="metric-lbl">CONFIANCE</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="r-edge">—</div>
+          <div class="metric-lbl">EDGE</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="r-odds2">—</div>
+          <div class="metric-lbl">COTE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEAMS -->
+    <div class="teams-compare">
+      <div class="team-block">
+        <div class="team-name" id="r-teamAName">—</div>
+        <div class="form-display" id="r-formA"></div>
+        <div class="team-absences" id="r-absA"></div>
+        <div class="team-info" id="r-infoA"></div>
+      </div>
+      <div class="vs-block"><div class="vs-text">VS</div></div>
+      <div class="team-block">
+        <div class="team-name" id="r-teamBName">—</div>
+        <div class="form-display" id="r-formB"></div>
+        <div class="team-absences" id="r-absB"></div>
+        <div class="team-info" id="r-infoB"></div>
+      </div>
+    </div>
+
+    <!-- H2H -->
+    <div class="h2h-box" id="r-h2hWrap" style="display:none;">
+      <div class="h2h-label">FACE À FACE</div>
+      <div id="r-h2h">—</div>
+    </div>
+
+    <!-- KEY FACTORS -->
+    <div class="card" style="padding:16px;">
+      <div class="card-label">FACTEURS CLÉS</div>
+      <div class="factors" id="r-factors"></div>
+    </div>
+
+    <!-- ALT BET -->
+    <div class="alt-box" id="r-altWrap" style="display:none;">
+      <div>
+        <div class="alt-label">PARI ALTERNATIF</div>
+        <div class="alt-pick" id="r-altPick">—</div>
+      </div>
+      <div class="alt-prob" id="r-altProb">—</div>
+    </div>
+
+    <!-- WARNING -->
+    <div class="warning-box" id="r-warningWrap" style="display:none;">
+      <span>⚠</span>
+      <span id="r-warning">—</span>
+    </div>
+
+    <!-- REASONING -->
+    <div class="card" style="padding:16px;">
+      <div class="card-label">ANALYSE</div>
+      <div class="reasoning-box" id="r-reasoning">—</div>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div class="feedback">
+      <button class="fb-btn won" id="fb-won" onclick="saveFeedback('won')">✓ GAGNÉ</button>
+      <button class="fb-btn lost" id="fb-lost" onclick="saveFeedback('lost')">✗ PERDU</button>
+    </div>
+
+    <button class="btn-ghost" onclick="resetSimple()">← NOUVELLE ANALYSE</button>
+  </div>
+</div>
+
+<!-- SECTION: COMBINÉ -->
+<div class="section" id="section-combo">
+
+  <div id="formCombo" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-label">MODE</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" onclick="setComboMode('manuel')" id="cmBtn-manuel">MANUEL</button>
+        <button class="mode-btn" onclick="setComboMode('auto')" id="cmBtn-auto">AUTO IA</button>
+      </div>
+
+      <!-- MANUEL -->
+      <div id="comboManuel">
+        <textarea id="matchesInput" rows="5" placeholder="Un match par ligne :&#10;PSG vs Lyon&#10;Real Madrid vs Barcelona&#10;Arsenal vs Chelsea"></textarea>
+      </div>
+
+      <!-- AUTO -->
+      <div id="comboAuto" style="display:none;">
+        <select id="autoSport">
+          <option value="football">Football</option>
+          <option value="basketball">Basketball</option>
+          <option value="tennis">Tennis</option>
+          <option value="tous">Tous sports</option>
+        </select>
+        <select id="autoCtx">
+          <option value="aujourd'hui">Matchs aujourd'hui</option>
+          <option value="prochains jours">Matchs prochains jours</option>
+          <option value="cette semaine">Cette semaine</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">NOMBRE DE SÉLECTIONS</div>
+      <div class="size-selector">
+        <button class="size-btn active" onclick="setSize(2)" id="sz-2">2</button>
+        <button class="size-btn" onclick="setSize(3)" id="sz-3">3</button>
+        <button class="size-btn" onclick="setSize(4)" id="sz-4">4</button>
+        <button class="size-btn" onclick="setSize(5)" id="sz-5">5</button>
+        <button class="size-btn" onclick="setSize('all')" id="sz-all">TOUT</button>
+      </div>
+      <textarea id="comboContext" rows="2" placeholder="Instructions supplémentaires (optionnel)..."></textarea>
+    </div>
+
+    <button class="btn-main" onclick="analyzeCombo()">GÉNÉRER LE COMBINÉ</button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loadingCombo">
+    <div class="loader-ring"></div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:3px;">GÉNÉRATION EN COURS</div>
+    <div class="loading-steps">
+      <div class="loading-step s1">▸ RECHERCHE DES MATCHS...</div>
+      <div class="loading-step s2">▸ ANALYSE INDIVIDUELLE...</div>
+      <div class="loading-step s3">▸ SÉLECTION DES MEILLEURS PARIS...</div>
+      <div class="loading-step s4">▸ CALCUL DE LA COTE COMBINÉE...</div>
+    </div>
+  </div>
+
+  <!-- COMBO RESULT -->
+  <div class="result" id="resultCombo">
+    <div class="combo-summary" style="margin-top:4px;">
+      <div class="combo-title">COMBINÉ GÉNÉRÉ</div>
+      <div style="margin-bottom:12px;">
+        <div class="dq-badge dq-complete" id="c-dqBadge">● DONNÉES COMPLÈTES</div>
+      </div>
+      <div class="combo-metrics">
+        <div class="combo-metric">
+          <div class="combo-metric-val" id="c-totalOdds">—</div>
+          <div class="combo-metric-lbl">COTE TOTALE</div>
+        </div>
+        <div class="combo-metric">
+          <div class="combo-metric-val" id="c-totalProb">—</div>
+          <div class="combo-metric-lbl">PROBABILITÉ</div>
+        </div>
+        <div class="combo-metric">
+          <div class="combo-metric-val" id="c-conf">—</div>
+          <div class="combo-metric-lbl">CONFIANCE</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="comboLegs"></div>
+
+    <div class="warning-box" id="c-warningWrap" style="display:none;">
+      <span>⚠</span>
+      <span id="c-warning">—</span>
+    </div>
+
+    <div class="card" style="padding:16px;">
+      <div class="card-label">STRATÉGIE</div>
+      <div class="reasoning-box" id="c-reasoning">—</div>
+    </div>
+
+    <div class="feedback">
+      <button class="fb-btn won" id="fb-combo-won" onclick="saveComboFeedback('won')">✓ COMBINÉ GAGNÉ</button>
+      <button class="fb-btn lost" id="fb-combo-lost" onclick="saveComboFeedback('lost')">✗ COMBINÉ PERDU</button>
+    </div>
+
+    <button class="btn-ghost" onclick="resetCombo()">← NOUVEAU COMBINÉ</button>
+  </div>
+</div>
+
+<!-- SECTION: HISTORIQUE -->
+<div class="section" id="section-history">
+  <div style="margin-top:20px;">
+    <div class="card">
+      <div class="card-label">HISTORIQUE DES PRÉDICTIONS</div>
+      <div id="historyList"></div>
+    </div>
+    <button class="btn-ghost" onclick="clearHistory()" style="margin-top:0;">EFFACER L'HISTORIQUE</button>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────
+let currentSection = 'analyse';
+let currentComboMode = 'manuel';
+let currentSize = 2;
+let lastSimpleResult = null;
+let lastComboResult = null;
+
+// ─── STORAGE ──────────────────────────────────────────────────────────
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('pe_history') || '[]'); } catch { return []; }
+}
+
+function saveHistory(h) {
+  localStorage.setItem('pe_history', JSON.stringify(h));
+}
+
+function getStats() {
+  const h = getHistory();
+  const total = h.length;
+  const won = h.filter(x => x.outcome === 'won').length;
+  const lost = h.filter(x => x.outcome === 'lost').length;
+  const rate = (won + lost) > 0 ? Math.round((won / (won + lost)) * 100) : null;
+  return { total, won, lost, rate };
+}
+
+function updateStatsBar() {
+  const s = getStats();
+  document.getElementById('stat-total').textContent = s.total;
+  document.getElementById('stat-won').textContent = s.won;
+  document.getElementById('stat-lost').textContent = s.lost;
+  document.getElementById('stat-rate').textContent = s.rate !== null ? s.rate + '%' : '—';
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────
+function switchSection(name) {
+  currentSection = name;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('bnav-' + name).classList.add('active');
+  if (name === 'history') renderHistory();
+}
+
+// ─── COMBO CONTROLS ───────────────────────────────────────────────────
+function setComboMode(mode) {
+  currentComboMode = mode;
+  document.getElementById('comboManuel').style.display = mode === 'manuel' ? 'block' : 'none';
+  document.getElementById('comboAuto').style.display = mode === 'auto' ? 'block' : 'none';
+  document.getElementById('cmBtn-manuel').classList.toggle('active', mode === 'manuel');
+  document.getElementById('cmBtn-auto').classList.toggle('active', mode === 'auto');
+}
+
+function setSize(sz) {
+  currentSize = sz;
+  ['2','3','4','5','all'].forEach(s => {
+    document.getElementById('sz-' + s).classList.toggle('active', String(sz) === s);
+  });
+}
+
+// ─── FORM DISPLAY ─────────────────────────────────────────────────────
+function renderForm(formStr, elId) {
+  const el = document.getElementById(elId);
+  if (!formStr || !el) return;
+  el.innerHTML = formStr.split('').map(c => {
+    const cls = c === 'V' ? 'V' : c === 'D' ? 'D' : 'N';
+    return `<div class="form-dot ${cls}">${c}</div>`;
+  }).join('');
+}
+
+// ─── DATA QUALITY BADGE ───────────────────────────────────────────────
+function setDQBadge(elId, quality) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.className = 'dq-badge';
+  if (quality === 'COMPLÈTE') { el.classList.add('dq-complete'); el.textContent = '● DONNÉES COMPLÈTES'; }
+  else if (quality === 'PARTIELLE') { el.classList.add('dq-partial'); el.textContent = '◐ DONNÉES PARTIELLES'; }
+  else { el.classList.add('dq-intuition'); el.textContent = '○ INTUITION — CONFIANCE LIMITÉE'; }
+}
+
+// ─── CONFIDENCE BAR ───────────────────────────────────────────────────
+function setConfBar(val) {
+  const bar = document.getElementById('r-confBar');
+  if (!bar) return;
+  bar.classList.remove('medium', 'low');
+  if (val < 50) bar.classList.add('low');
+  else if (val < 65) bar.classList.add('medium');
+  setTimeout(() => { bar.style.width = val + '%'; }, 100);
+}
+
+// ─── API CALL ─────────────────────────────────────────────────────────
+async function callAPI(mode, payload) {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, payload })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Erreur API');
+  return data.data;
+}
+
+// ─── ANALYZE SIMPLE ───────────────────────────────────────────────────
+async function analyzeSimple() {
+  const teamA = document.getElementById('teamA').value.trim();
+  const teamB = document.getElementById('teamB').value.trim();
+  if (!teamA || !teamB) { alert('Entre les deux équipes.'); return; }
+
+  const payload = {
+    teamA,
+    teamB,
+    league: document.getElementById('league').value.trim(),
+    betType: document.getElementById('betType').value,
+    context: document.getElementById('context').value.trim()
+  };
+
+  document.getElementById('formSimple').style.display = 'none';
+  document.getElementById('resultSimple').classList.remove('show');
+  document.getElementById('loadingSimple').classList.add('show');
+
+  try {
+    const p = await callAPI('simple', payload);
+
+    // Data quality
+    setDQBadge('r-dqBadge', p.dataQuality);
+
+    // Match info
+    document.getElementById('r-match').textContent = `${teamA} vs ${teamB}`;
+    document.getElementById('r-betType').textContent = p.mainBet?.type || payload.betType || 'ANALYSE COMPLÈTE';
+
+    // Main prediction
+    document.getElementById('r-pick').textContent = p.mainBet?.pick || '—';
+    document.getElementById('r-odds').textContent = p.mainBet?.odds || '—';
+    document.getElementById('r-odds2').textContent = p.mainBet?.odds || '—';
+    const conf = p.mainBet?.confidence || 0;
+    document.getElementById('r-conf').textContent = conf + '%';
+    document.getElementById('r-confLabel').textContent = p.mainBet?.confidenceLabel || '—';
+    document.getElementById('r-edge').textContent = p.mainBet?.edge || '—';
+    setConfBar(conf);
+
+    // Teams
+    document.getElementById('r-teamAName').textContent = teamA;
+    document.getElementById('r-teamBName').textContent = teamB;
+    renderForm(p.teamA?.form, 'r-formA');
+    renderForm(p.teamB?.form, 'r-formB');
+    document.getElementById('r-absA').textContent = p.teamA?.keyAbsences?.join(', ') || '';
+    document.getElementById('r-absB').textContent = p.teamB?.keyAbsences?.join(', ') || '';
+    document.getElementById('r-infoA').textContent = p.teamA?.recentStats || '';
+    document.getElementById('r-infoB').textContent = p.teamB?.recentStats || '';
+
+    // H2H
+    if (p.h2h) {
+      document.getElementById('r-h2h').textContent = p.h2h;
+      document.getElementById('r-h2hWrap').style.display = 'block';
+    } else {
+      document.getElementById('r-h2hWrap').style.display = 'none';
+    }
+
+    // Key factors
+    const factorsEl = document.getElementById('r-factors');
+    factorsEl.innerHTML = (p.keyFactors || []).map((f, i) =>
+      `<div class="factor"><div class="factor-num">${String(i+1).padStart(2,'0')}</div><div>${f}</div></div>`
+    ).join('');
+
+    // Alt bet
+    if (p.altBet?.pick) {
+      document.getElementById('r-altPick').textContent = p.altBet.pick;
+      document.getElementById('r-altProb').textContent = p.altBet.confidence + '%';
+      document.getElementById('r-altWrap').style.display = 'flex';
+    } else {
+      document.getElementById('r-altWrap').style.display = 'none';
+    }
+
+    // Warning
+    if (p.warning) {
+      document.getElementById('r-warning').textContent = p.warning;
+      document.getElementById('r-warningWrap').style.display = 'flex';
+    } else {
+      document.getElementById('r-warningWrap').style.display = 'none';
+    }
+
+    // Reasoning
+    document.getElementById('r-reasoning').textContent = p.reasoning || '—';
+
+    // Reset feedback
+    document.getElementById('fb-won').disabled = false;
+    document.getElementById('fb-lost').disabled = false;
+    document.getElementById('fb-won').className = 'fb-btn won';
+    document.getElementById('fb-lost').className = 'fb-btn lost';
+
+    // Save to history as pending
+    lastSimpleResult = {
+      id: Date.now(),
+      type: 'simple',
+      match: `${teamA} vs ${teamB}`,
+      bet: p.mainBet?.pick || '—',
+      betType: p.mainBet?.type || '—',
+      odds: p.mainBet?.odds || '—',
+      confidence: conf,
+      dataQuality: p.dataQuality,
+      outcome: 'pending',
+      date: new Date().toLocaleDateString('fr-FR')
+    };
+    const h = getHistory();
+    h.unshift(lastSimpleResult);
+    saveHistory(h);
+    updateStatsBar();
+
+    document.getElementById('loadingSimple').classList.remove('show');
+    document.getElementById('resultSimple').classList.add('show');
+  } catch(e) {
+    document.getElementById('loadingSimple').classList.remove('show');
+    document.getElementById('formSimple').style.display = 'block';
+    alert('Erreur : ' + e.message);
+  }
+}
+
+// ─── ANALYZE COMBO ────────────────────────────────────────────────────
+async function analyzeCombo() {
+  let matches = '';
+  if (currentComboMode === 'manuel') {
+    matches = document.getElementById('matchesInput').value.trim();
+    if (!matches) { alert('Entre au moins 2 matchs.'); return; }
+  }
+
+  const payload = {
+    mode: currentComboMode,
+    matches,
+    size: currentSize,
+    sport: document.getElementById('autoSport')?.value || 'football',
+    ctx: document.getElementById('autoCtx')?.value || "aujourd'hui",
+    context: document.getElementById('comboContext').value.trim()
+  };
+
+  document.getElementById('formCombo').style.display = 'none';
+  document.getElementById('resultCombo').classList.remove('show');
+  document.getElementById('loadingCombo').classList.add('show');
+
+  try {
+    const p = await callAPI('combo', payload);
+
+    setDQBadge('c-dqBadge', p.dataQuality);
+    document.getElementById('c-totalOdds').textContent = p.totalOdds || '—';
+    document.getElementById('c-totalProb').textContent = p.totalProb ? p.totalProb + '%' : '—';
+    document.getElementById('c-conf').textContent = p.confidence ? p.confidence + '%' : '—';
+
+    const legsEl = document.getElementById('comboLegs');
+    legsEl.innerHTML = (p.legs || []).map((leg, i) => {
+      const dqClass = leg.dataQuality === 'COMPLÈTE' ? '' : leg.dataQuality === 'PARTIELLE' ? 'partial' : 'intuition';
+      return `
+        <div class="leg ${dqClass}">
+          <div>
+            <div class="leg-num">SEL. ${String(i+1).padStart(2,'0')}${leg.competition ? ' · ' + leg.competition.toUpperCase() : ''}</div>
+            <div class="leg-match">${leg.match || '—'}</div>
+            <div class="leg-bet">${leg.bet || '—'} · ${leg.pick || ''}</div>
+            ${leg.keyReason ? `<div class="leg-dq" style="margin-top:4px;color:#666;">${leg.keyReason}</div>` : ''}
+          </div>
+          <div class="leg-right">
+            <div class="leg-odds">${leg.odds || '—'}</div>
+            <div class="leg-prob">${leg.prob || 0}%</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    if (p.warning) {
+      document.getElementById('c-warning').textContent = p.warning;
+      document.getElementById('c-warningWrap').style.display = 'flex';
+    } else {
+      document.getElementById('c-warningWrap').style.display = 'none';
+    }
+
+    document.getElementById('c-reasoning').textContent = p.reasoning || '—';
+
+    document.getElementById('fb-combo-won').disabled = false;
+    document.getElementById('fb-combo-lost').disabled = false;
+    document.getElementById('fb-combo-won').className = 'fb-btn won';
+    document.getElementById('fb-combo-lost').className = 'fb-btn lost';
+
+    lastComboResult = {
+      id: Date.now(),
+      type: 'combo',
+      match: (p.legs || []).map(l => l.match).join(' + '),
+      bet: 'Combiné ' + (p.legs || []).length + ' sélections',
+      betType: 'COMBINÉ',
+      odds: p.totalOdds || '—',
+      confidence: p.confidence || 0,
+      dataQuality: p.dataQuality,
+      outcome: 'pending',
+      date: new Date().toLocaleDateString('fr-FR')
+    };
+    const h = getHistory();
+    h.unshift(lastComboResult);
+    saveHistory(h);
+    updateStatsBar();
+
+    document.getElementById('loadingCombo').classList.remove('show');
+    document.getElementById('resultCombo').classList.add('show');
+  } catch(e) {
+    document.getElementById('loadingCombo').classList.remove('show');
+    document.getElementById('formCombo').style.display = 'block';
+    alert('Erreur : ' + e.message);
+  }
+}
+
+// ─── FEEDBACK ─────────────────────────────────────────────────────────
+function saveFeedback(outcome) {
+  if (!lastSimpleResult) return;
+  const h = getHistory();
+  const idx = h.findIndex(x => x.id === lastSimpleResult.id);
+  if (idx !== -1) { h[idx].outcome = outcome; saveHistory(h); }
+  document.getElementById('fb-won').disabled = true;
+  document.getElementById('fb-lost').disabled = true;
+  document.getElementById('fb-won').className = 'fb-btn' + (outcome === 'won' ? ' selected-won' : '');
+  document.getElementById('fb-lost').className = 'fb-btn' + (outcome === 'lost' ? ' selected-lost' : '');
+  updateStatsBar();
+}
+
+function saveComboFeedback(outcome) {
+  if (!lastComboResult) return;
+  const h = getHistory();
+  const idx = h.findIndex(x => x.id === lastComboResult.id);
+  if (idx !== -1) { h[idx].outcome = outcome; saveHistory(h); }
+  document.getElementById('fb-combo-won').disabled = true;
+  document.getElementById('fb-combo-lost').disabled = true;
+  document.getElementById('fb-combo-won').className = 'fb-btn' + (outcome === 'won' ? ' selected-won' : '');
+  document.getElementById('fb-combo-lost').className = 'fb-btn' + (outcome === 'lost' ? ' selected-lost' : '');
+  updateStatsBar();
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────
+function renderHistory() {
+  const h = getHistory();
+  const el = document.getElementById('historyList');
+  if (!h.length) {
+    el.innerHTML = '<div class="empty-state">AUCUNE ANALYSE ENREGISTRÉE</div>';
+    return;
+  }
+  el.innerHTML = h.slice(0, 30).map(item => {
+    const outcomeClass = item.outcome === 'won' ? 'h-won' : item.outcome === 'lost' ? 'h-lost' : 'h-pending';
+    const outcomeText = item.outcome === 'won' ? '✓ GAGNÉ' : item.outcome === 'lost' ? '✗ PERDU' : '◌ EN ATTENTE';
+    return `
+      <div class="history-item">
+        <div>
+          <div class="h-match">${item.match}</div>
+          <div class="h-bet">${item.bet} · ${item.odds}</div>
+          <div class="h-date">${item.date} · ${item.confidence}% conf.</div>
+        </div>
+        <div class="h-outcome ${outcomeClass}">${outcomeText}</div>
+      </div>`;
+  }).join('');
+}
+
+function clearHistory() {
+  if (!confirm('Effacer tout l\'historique ?')) return;
+  localStorage.removeItem('pe_history');
+  updateStatsBar();
+  renderHistory();
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────
+function resetSimple() {
+  document.getElementById('formSimple').style.display = 'block';
+  document.getElementById('resultSimple').classList.remove('show');
+  document.getElementById('r-confBar').style.width = '0%';
+  lastSimpleResult = null;
+}
+
+function resetCombo() {
+  document.getElementById('formCombo').style.display = 'block';
+  document.getElementById('resultCombo').classList.remove('show');
+  lastComboResult = null;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+updateStatsBar();
+</script>
+</body>
+</html>
